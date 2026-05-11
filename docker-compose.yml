@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # --- BASE DE DATOS ---
+  db:
+    image: postgres:16-alpine  # Ya actualizado a la versión 16
+    environment:
+      POSTGRES_USER: pancho
+      POSTGRES_PASSWORD: pass123 # Puedes poner la contraseña que quieras
+      POSTGRES_DB: agenda_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - examen_FJSS
+    deploy:
+      placement:
+        constraints:
+          - "node.hostname == Worker-2"
+
+  # --- TU APLICACIÓN ---
+  agenda:
+    # Recuerda cambiar esto por tu usuario de Docker Hub
+    image: adminjavier/ex_u3_agenda:latest
+    depends_on:
+      - db
+    environment:
+      # Esta es la variable que leerá tu línea 14 de __init__.py
+      DATABASE_URL: "postgresql://pancho:pass123@db:5432/agenda_db"
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "5050:5050"
+    networks:
+      - examen_FJSS
+
+networks:
+  examen_FJSS:
+    external: true
+
+volumes:
+  db_data:
