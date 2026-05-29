@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-agenda-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      role: mi-agenda
+  template:
+    metadata:
+      labels:
+        role: mi-agenda
+    spec:
+      containers:
+      - name: flask-container
+        image: adminjavier/ex_u3_agenda:latest
+        imagePullPolicy: Always
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:admin1234@dbpostgres-svc/agendadb"
+        ports:
+        - containerPort: 5050
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-agenda-svc
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8080
+    targetPort: 5050
+  selector:
+    role: mi-agenda
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbpostgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      role: dbpostgres
+  template:
+    metadata:
+      labels:
+        role: dbpostgres
+    spec:
+      containers:
+      - name: postgres-db
+        image: postgres:16.8
+        env:
+        - name: POSTGRES_DB
+          value: "agendadb"
+        - name: POSTGRES_PASSWORD
+          value: "admin1234"
+        ports:
+        - containerPort: 5432
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbpostgres-svc
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    role: dbpostgres
